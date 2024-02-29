@@ -1,4 +1,5 @@
 ﻿using AspNet7JWT_Autentication.Core.Dtos;
+using AspNet7JWT_Autentication.Core.Entities;
 using AspNet7JWT_Autentication.Core.OtherObjects;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,11 +16,11 @@ namespace AspNet7JWT_Autentication.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly UserManager<IdentityUser> _userManager;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
 
-        public AuthController(UserManager<IdentityUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
+        public AuthController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
         {
             _userManager = userManager;
             _roleManager = roleManager;
@@ -56,8 +57,10 @@ namespace AspNet7JWT_Autentication.Controllers
             if (isExistsUser != null)
                 return BadRequest("UserName Already Exists");
 
-            IdentityUser newUser = new IdentityUser()
-            {
+            ApplicationUser newUser = new ApplicationUser()
+            { 
+                FirtsName=registerDto.UserName,
+                LastName= registerDto.LastName,
                 Email = registerDto.Email,
                 UserName = registerDto.UserName,
                 SecurityStamp = Guid.NewGuid().ToString(),
