@@ -4,6 +4,12 @@ namespace AspNet7JWT_Autentication.Core.Dtos
 {
     public class RegisterDtos
     {
+        [Required(ErrorMessage ="FirtsName Is Required")]
+        public string FirtsName { get; set; }
+
+        [Required(ErrorMessage = "LastName Is Required")]
+        public string LastName { get; set; }
+
         [Required(ErrorMessage="Username is required")]
         public string UserName { get; set; }
 
