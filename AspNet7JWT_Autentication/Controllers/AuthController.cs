@@ -132,11 +132,53 @@ namespace AspNet7JWT_Autentication.Controllers
 
             return token;
         }
+
+
+        [HttpPost]
+        [Route("make-admin")]
+
+
+        public async Task<IActionResult> MakeAdmin([FromBody] UpdatePermissionDto updatePermissionDto) {
+        
+        
+        var user_Future_Admin= await _userManager.FindByNameAsync(updatePermissionDto.UserName);
+
+            if (user_Future_Admin is null) {
+
+                return BadRequest("Invalid username");
+            
+            }
+
+
+            await _userManager.AddToRoleAsync(user_Future_Admin,StaticUserRoles.ADMIN);
+            return Ok("User is now an Admin");
+        
+        }
+
+        [HttpPost]
+        [Route("make-Owner")]
+
+
+        public async Task<IActionResult> MakeOwner([FromBody] UpdatePermissionDto updatePermissionDto)
+        {
+
+
+            var user_Future_Owner= await _userManager.FindByNameAsync(updatePermissionDto.UserName);
+
+            if (user_Future_Owner is null)
+            {
+
+                return BadRequest("Invalid username");
+
+            }
+
+
+            await _userManager.AddToRoleAsync(user_Future_Owner, StaticUserRoles.OWNER);
+            return Ok("User is now an Owner");
+
+        }
+
+
+
     }
 }
-/*ValidateIssuer = true,
-        ValidateAudience = true,
-
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"]))        
-ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
-        ValidAudience = builder.Configuration["JWT:ValidAudience"],*/
