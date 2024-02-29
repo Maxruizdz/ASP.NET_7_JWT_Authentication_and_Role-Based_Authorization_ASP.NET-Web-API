@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\AspNet7JWT_Autentication.props" />
+</Project>

@@ -1,4 +1,7 @@
+using AspNet7JWT_Autentication.Core.OtherObjects;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace AspNet7JWT_Autentication.Controllers
 {
@@ -11,23 +14,46 @@ namespace AspNet7JWT_Autentication.Controllers
         "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
     };
 
-        private readonly ILogger<WeatherForecastController> _logger;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        [HttpGet]
+        [Route("Get")]
+        public IActionResult Get()
         {
-            _logger = logger;
+            return Ok(Summaries);
         }
 
-        [HttpGet(Name = "GetWeatherForecast")]
-        public IEnumerable<WeatherForecast> Get()
+        [HttpGet]
+        [Route("GetUserRole")]
+        [Authorize(Roles = StaticUserRoles.USER)]
+        public IActionResult GetUserRole()
         {
-            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
-            {
-                Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                TemperatureC = Random.Shared.Next(-20, 55),
-                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-            })
-            .ToArray();
+            var userId = User.FindFirst(ClaimTypes.Name)?.Value;
+
+            return Ok(userId);
+            
         }
+
+        [HttpGet]
+        [Route("GetAdminRole")]
+        [Authorize(Roles = StaticUserRoles.ADMIN)]
+        public IActionResult GetAdminRole()
+        {
+            
+
+            return Ok
+                (Summaries);
+           
+        }
+
+
+        [HttpGet]
+        [Route("GetOwnerRole")]
+        [Authorize(Roles = StaticUserRoles.OWNER)]
+        public IActionResult GetOwnerRole()
+        { // Acceder a la información del usuario desde el token
+            var userId = User.FindFirst(ClaimTypes.Name)?.Value;
+            return Ok(User);
+        }
+
     }
 }

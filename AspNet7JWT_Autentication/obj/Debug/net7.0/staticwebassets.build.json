@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "pU9KVRz71ulXHylBe7du6IUyx9cdjQ07eSnd/myqP/U=",
+  "Source": "AspNet7JWT_Autentication",
+  "BasePath": "_content/AspNet7JWT_Autentication",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
