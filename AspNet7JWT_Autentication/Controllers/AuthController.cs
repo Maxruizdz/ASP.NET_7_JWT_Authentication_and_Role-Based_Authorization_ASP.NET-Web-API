@@ -1,5 +1,6 @@
 ﻿using AspNet7JWT_Autentication.Core.Dtos;
 using AspNet7JWT_Autentication.Core.Entities;
+using AspNet7JWT_Autentication.Core.Interfaces;
 using AspNet7JWT_Autentication.Core.OtherObjects;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -16,15 +17,11 @@ namespace AspNet7JWT_Autentication.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly IConfiguration _configuration;
+        private readonly IAuthServices _authServices;
 
-        public AuthController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration configuration)
+        public AuthController(IAuthServices authServices)
         {
-            _userManager = userManager;
-            _roleManager = roleManager;
-            _configuration = configuration;
+            _authServices = authServices;
         }
 
         // Route For Seeding my roles to DB
@@ -32,18 +29,12 @@ namespace AspNet7JWT_Autentication.Controllers
         [Route("seed-roles")]
         public async Task<IActionResult> SeedRoles()
         {
-            bool isOwnerRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.OWNER);
-            bool isAdminRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.ADMIN);
-            bool isUserRoleExists = await _roleManager.RoleExistsAsync(StaticUserRoles.USER);
+          var result= await _authServices.SeedRolesAsync();
 
-            if (isOwnerRoleExists && isAdminRoleExists && isUserRoleExists)
-                return Ok("Roles Seeding is Already Done");
-
-            await _roleManager.CreateAsync(new IdentityRole(StaticUserRoles.USER));
-            await _roleManager.CreateAsync(new IdentityRole(StaticUserRoles.ADMIN));
-            await _roleManager.CreateAsync(new IdentityRole(StaticUserRoles.OWNER));
-
-            return Ok("Role Seeding Done Successfully");
+            if (result.IsSucceed) { 
+            return Ok(result);
+            }
+            return BadRequest(result);
         }
 
 
@@ -52,36 +43,14 @@ namespace AspNet7JWT_Autentication.Controllers
         [Route("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDtos registerDto)
         {
-            var isExistsUser = await _userManager.FindByNameAsync(registerDto.UserName);
+            var result = await _authServices.RegisterAsync(registerDto);
 
-            if (isExistsUser != null)
-                return BadRequest("UserName Already Exists");
-
-            ApplicationUser newUser = new ApplicationUser()
-            { 
-                FirtsName=registerDto.UserName,
-                LastName= registerDto.LastName,
-                Email = registerDto.Email,
-                UserName = registerDto.UserName,
-                SecurityStamp = Guid.NewGuid().ToString(),
-            };
-
-            var createUserResult = await _userManager.CreateAsync(newUser, registerDto.Password);
-
-            if (!createUserResult.Succeeded)
+            if (result.IsSucceed)
             {
-                var errorString = "User Creation Failed Beacause: ";
-                foreach (var error in createUserResult.Errors)
-                {
-                    errorString += " # " + error.Description;
-                }
-                return BadRequest(errorString);
+                return Ok(result);
             }
+            return BadRequest(result);
 
-            // Add a Default USER Role to all users
-            await _userManager.AddToRoleAsync(newUser, StaticUserRoles.USER);
-
-            return Ok("User Created Successfully");
         }
 
 
@@ -90,51 +59,15 @@ namespace AspNet7JWT_Autentication.Controllers
         [Route("login")]
         public async Task<IActionResult> Login([FromBody] LoginDtos loginDto)
         {
-            var user = await _userManager.FindByNameAsync(loginDto.UserName);
+            var result = await _authServices.LoginAsync(loginDto);
 
-            if (user is null)
-                return Unauthorized("Invalid Credentials");
-
-            var isPasswordCorrect = await _userManager.CheckPasswordAsync(user, loginDto.Password);
-
-            if (!isPasswordCorrect)
-                return Unauthorized("Invalid Credentials");
-
-            var userRoles = await _userManager.GetRolesAsync(user);
-
-            var authClaims = new List<Claim>
+            if (result.IsSucceed)
             {
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim("JWTID", Guid.NewGuid().ToString()),
-            };
-
-            foreach (var userRole in userRoles)
-            {
-                authClaims.Add(new Claim(ClaimTypes.Role, userRole));
+                return Ok(result);
             }
-
-            var token = GenerateNewJsonWebToken(authClaims);
-
-            return Ok(token);
+            return BadRequest(result);
         }
 
-        private string GenerateNewJsonWebToken(List<Claim> claims)
-        {
-            var authSecret = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
-
-            var tokenObject = new JwtSecurityToken(
-                    issuer: _configuration["JWT:ValidIssuer"],
-                    audience: _configuration["JWT:ValidAudience"],
-                    expires: DateTime.Now.AddHours(1),
-                    claims: claims,
-                    signingCredentials: new SigningCredentials(authSecret, SecurityAlgorithms.HmacSha256)
-                );
-
-            string token = new JwtSecurityTokenHandler().WriteToken(tokenObject);
-
-            return token;
-        }
 
 
         [HttpPost]
@@ -142,20 +75,15 @@ namespace AspNet7JWT_Autentication.Controllers
 
 
         public async Task<IActionResult> MakeAdmin([FromBody] UpdatePermissionDto updatePermissionDto) {
-        
-        
-        var user_Future_Admin= await _userManager.FindByNameAsync(updatePermissionDto.UserName);
 
-            if (user_Future_Admin is null) {
 
-                return BadRequest("Invalid username");
-            
+            var result = await _authServices.MakeAdminAsync( updatePermissionDto);
+
+            if (result.IsSucceed)
+            {
+                return Ok(result);
             }
-
-
-            await _userManager.AddToRoleAsync(user_Future_Admin,StaticUserRoles.ADMIN);
-            return Ok("User is now an Admin");
-        
+            return BadRequest(result);
         }
 
         [HttpPost]
@@ -164,21 +92,13 @@ namespace AspNet7JWT_Autentication.Controllers
 
         public async Task<IActionResult> MakeOwner([FromBody] UpdatePermissionDto updatePermissionDto)
         {
+            var result = await _authServices.MakeOwnerAsync(updatePermissionDto);
 
-
-            var user_Future_Owner= await _userManager.FindByNameAsync(updatePermissionDto.UserName);
-
-            if (user_Future_Owner is null)
+            if (result.IsSucceed)
             {
-
-                return BadRequest("Invalid username");
-
+                return Ok(result);
             }
-
-
-            await _userManager.AddToRoleAsync(user_Future_Owner, StaticUserRoles.OWNER);
-            return Ok("User is now an Owner");
-
+            return BadRequest(result);
         }
 
 
