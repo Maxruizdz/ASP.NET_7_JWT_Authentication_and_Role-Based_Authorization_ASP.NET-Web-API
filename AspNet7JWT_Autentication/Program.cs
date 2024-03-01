@@ -1,6 +1,9 @@
 using AspNet7JWT_Autentication.Core.DbContext;
 using AspNet7JWT_Autentication.Core.Entities;
+using AspNet7JWT_Autentication.Core.Interfaces;
+using AspNet7JWT_Autentication.Core.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -21,6 +24,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectioString);
 
 });
+
 //Add Identity
 builder.Services.
     AddIdentity<ApplicationUser, IdentityRole>()
@@ -65,6 +69,7 @@ builder.Services
         };
     });
 
+builder.Services.AddScoped<IAuthServices, AuthServices>();
 
 var app = builder.Build();
 
